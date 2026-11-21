@@ -404,7 +404,7 @@ function render(){
     <div class="photo" id="photo">
       <div class="glow"></div>
       <svg class="ring" viewBox="0 0 200 200"><circle cx="100" cy="100" r="96" fill="none" stroke="#10A861" stroke-width=".6" stroke-dasharray="2 5"/><circle cx="100" cy="100" r="80" fill="none" stroke="#10A861" stroke-width=".3" stroke-dasharray="1 3"/></svg>
-      <img src="assets/photo.webp" alt="Zyad Ibrahim">
+      <img src="photo.webp" alt="Zyad Ibrahim">
       ${S.heroChips.map((c,i)=>`<div class="chip c${i}"><div class="v num">${esc(c.v)}</div><div class="k">${esc(t(c))}</div></div>`).join('')}
     </div>
   </div><div class="scrollcue"><span>${esc(u('scroll'))}</span><i></i></div></section>
@@ -441,17 +441,17 @@ function render(){
   <section id="results" style="padding-top:0"><div class="wrap">
     <div class="kicker">${esc(u('wallKicker'))}</div>
     <h2 class="h2 split">${words(u('wallTitle'))}</h2>
-    <div class="wall rv-group">${S.resultsWall.map(r=>`<figure class="rv zoom" data-src="assets/${r.img}"><img src="assets/${r.img}" alt="${esc(t(r))}" loading="lazy"><figcaption>${esc(t(r))}</figcaption></figure>`).join('')}</div>
+    <div class="wall rv-group">${S.resultsWall.map(r=>`<figure class="rv zoom" data-src="${r.img}"><img src="${r.img}" alt="${esc(t(r))}" loading="lazy"><figcaption>${esc(t(r))}</figcaption></figure>`).join('')}</div>
   </div></section>
 
   <section class="clients" id="clients" style="padding-inline:0"><div class="wrap" style="padding-inline:var(--pad)">
     <div class="kicker">${esc(u('clientsKicker'))}</div>
     <h2 class="h2 split" style="margin-bottom:50px">${words(u('clientsTitle'))}</h2>
-    ${(S.featuredClients||[]).length ? `<div class="feat-label">${esc(u('featuredLabel'))}</div><div class="featured rv-group">${S.featuredClients.map(f=>`<div class="fc rv" style="--fbg:${f.bg}"><div class="fc-in ${f.round?'round':''} ${f.wide?'wide':''}"><img src="assets/${f.logo}" alt="${esc(f.name)}"></div></div>`).join('')}</div>` : ''}
+    ${(S.featuredClients||[]).length ? `<div class="feat-label">${esc(u('featuredLabel'))}</div><div class="featured rv-group">${S.featuredClients.map(f=>`<div class="fc rv" style="--fbg:${f.bg}"><div class="fc-in ${f.round?'round':''} ${f.wide?'wide':''}"><img src="${f.logo}" alt="${esc(f.name)}"></div></div>`).join('')}</div>` : ''}
     </div>
     ${logoRow(S.clients.slice(0,9),'')}
     ${logoRow(S.clients.slice(9),'rev')}
-    <div style="padding-inline:var(--pad)"><img class="strip rv" src="assets/logos-strip.webp" alt="ABAD · Tiriaq · DICE · Globemed · FLOW" loading="lazy"></div>
+    <div style="padding-inline:var(--pad)"><img class="strip rv" src="logos-strip.webp" alt="ABAD · Tiriaq · DICE · Globemed · FLOW" loading="lazy"></div>
   </section>
 
   <section id="skills"><div class="wrap">
@@ -529,7 +529,7 @@ function caseHTML(c,i){
       ${per}
       <p class="summary rv">${esc(t(c.summary))}</p>
       <div class="proof">${esc(u('proof'))}</div>
-      <div class="shots" style="--cols:${Math.min(c.images.length,2)}">${c.images.map(im=>`<div class="shot rv zoom" data-src="assets/${im}"><img src="assets/${im}" alt="${esc(t(c.title))}" loading="lazy"></div>`).join('')}</div>
+      <div class="shots" style="--cols:${Math.min(c.images.length,2)}">${c.images.map(im=>`<div class="shot rv zoom" data-src="${im}"><img src="${im}" alt="${esc(t(c.title))}" loading="lazy"></div>`).join('')}</div>
       <button class="toggle" aria-expanded="false"><span class="pl">+</span><span class="tl-txt">${esc(u('readMore'))}</span></button>
       <div class="details"><div class="details-inner">
         <div><h4>${esc(u('challenge'))}</h4><ul>${t(c.challenge).map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>
@@ -541,7 +541,7 @@ function caseHTML(c,i){
   </article>`;
 }
 function logoRow(list,cls){
-  const one = list.map(n=>`<div class="lg"><img src="assets/logo-${n}.webp" alt="${n}" loading="lazy"></div>`).join('');
+  const one = list.map(n=>`<div class="lg"><img src="logo-${n}.webp" alt="${n}" loading="lazy"></div>`).join('');
   return `<div class="marquee"><div class="logo-track ${cls}">${one}${one}</div></div>`;
 }
 function renderChips(k, anim=true){
@@ -550,7 +550,7 @@ function renderChips(k, anim=true){
   const ic = S.skills[k].ic;
   box.className = ic ? 'chips tiles' : 'chips';
   box.innerHTML = ic
-    ? list.map((x,i)=>`<div class="tile"><div class="tico"><img src="assets/ic/${ic[i]}.png" alt="${esc(x)}"></div><span>${esc(x)}</span></div>`).join('')
+    ? list.map((x,i)=>`<div class="tile"><div class="tico"><img src="${ic[i]}.png" alt="${esc(x)}"></div><span>${esc(x)}</span></div>`).join('')
     : list.map(x=>`<span class="sk">${esc(x)}</span>`).join('');
   if(hasG && anim) gsap.from(box.children,{y:30,opacity:0,scale:.9,duration:.7,stagger:.035,ease:'back.out(1.5)',clearProps:'transform'});
   movePill();
