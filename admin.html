@@ -123,6 +123,49 @@ pre.code{background:#0b0d0c;border:1px solid var(--line);border-radius:10px;padd
 .evt code{direction:ltr;color:var(--green2);font-weight:700}
 .search{max-width:320px;margin-bottom:16px}
 .loading{padding:60px;text-align:center;color:var(--muted)}
+/* ===== Glass theme ===== */
+:root{--glass:rgba(255,255,255,.045);--glass2:rgba(255,255,255,.07);--gline:rgba(255,255,255,.12);--blur:blur(18px) saturate(160%)}
+html{background:#070908}
+body{background:transparent;min-height:100vh;position:relative}
+body::before{content:"";position:fixed;inset:-20%;z-index:-1;pointer-events:none;
+ background:radial-gradient(34% 30% at 22% 28%,rgba(16,168,97,.55),transparent 70%),
+ radial-gradient(28% 26% at 70% 18%,rgba(31,209,126,.32),transparent 70%),
+ radial-gradient(36% 34% at 62% 72%,rgba(16,168,97,.42),transparent 70%),
+ radial-gradient(24% 22% at 15% 85%,rgba(120,255,190,.18),transparent 70%),
+ radial-gradient(20% 18% at 90% 50%,rgba(31,209,126,.22),transparent 70%),#070908;
+ filter:blur(10px);animation:glassdrift 26s ease-in-out infinite alternate}
+@keyframes glassdrift{0%{transform:translate3d(0,0,0) scale(1)}50%{transform:translate3d(-3%,2%,0) scale(1.06)}100%{transform:translate3d(2%,-2%,0) scale(1.02)}}
+@media (prefers-reduced-motion:reduce){body::before{animation:none}}
+.login form,.top,.side,.card,.box2,.modal .box,.tpl,.toast{
+ background:linear-gradient(145deg,rgba(255,255,255,.085),rgba(255,255,255,.025));
+ -webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);
+ border:1px solid var(--gline);
+ box-shadow:0 10px 40px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.12)}
+.top{background:rgba(10,14,12,.45);border-width:0 0 1px 0;box-shadow:0 6px 30px rgba(0,0,0,.25)}
+.side{background:rgba(255,255,255,.025);border-width:0;border-inline-end:1px solid var(--gline);box-shadow:none}
+.login form{border-radius:26px;padding:38px}
+.card{border-radius:18px}
+.box2{border-radius:20px}
+.sub-rep .card{background:rgba(255,255,255,.035)}
+.modal{background:rgba(0,0,0,.45);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.modal .box{border-radius:26px}
+.tpl:hover{border-color:rgba(31,209,126,.6);box-shadow:0 14px 40px rgba(16,168,97,.18),inset 0 1px 0 rgba(255,255,255,.15)}
+.tpl .mini{background:rgba(0,0,0,.25);border-color:var(--gline)}
+input[type=text],input[type=number],input[type=url],input[type=password],input[type=email],select,textarea,pre.code{
+ background:rgba(0,0,0,.28);border-color:var(--gline);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+input:focus,select:focus,textarea:focus{border-color:var(--green2);box-shadow:0 0 0 3px rgba(31,209,126,.15)}
+select option{background:#121614}
+.btn{background:rgba(255,255,255,.04);border-color:var(--gline);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.btn:hover{background:rgba(255,255,255,.08)}
+.btn.pri{background:linear-gradient(135deg,rgba(31,209,126,.95),rgba(16,168,97,.9));border-color:rgba(255,255,255,.18);box-shadow:0 6px 22px rgba(16,168,97,.35),inset 0 1px 0 rgba(255,255,255,.3)}
+.btn.pri:hover{background:linear-gradient(135deg,#2ee08c,#14b86b)}
+.side button.on{background:rgba(16,168,97,.18);box-shadow:inset 0 0 0 1px rgba(31,209,126,.35)}
+.side button:hover{background:rgba(255,255,255,.06)}
+.add{background:rgba(16,168,97,.06)}
+.imgf .pv,.imgs .it{border-color:var(--gline)}
+.toast{background:rgba(20,30,24,.6)}
+.ltable th,.ltable td{border-bottom-color:var(--gline)}
+@media(max-width:860px){.side{background:rgba(10,14,12,.55);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);border-inline-end:0;border-bottom:1px solid var(--gline)}}
 </style>
 </head>
 <body>
