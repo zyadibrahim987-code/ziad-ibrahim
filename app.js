@@ -13,7 +13,14 @@ async function loadContent(){
   }catch(e){}
   const r2 = await fetch('content.json', {cache:'no-store'}); return r2.json();
 }
-const S = await loadContent();
+async function loadReviews(){
+  try{
+    const r = await fetch(`${CFG.url}/rest/v1/reviews?status=eq.approved&select=id,created_at,source,name,role,rating,comment,audio_url,image_url,featured&order=featured.desc,created_at.desc&limit=60`, {headers:{apikey:CFG.key, Authorization:'Bearer '+CFG.key}, cache:'no-store'});
+    if(r.ok) return await r.json();
+  }catch(e){}
+  return [];
+}
+const [S, REVIEWS] = await Promise.all([loadContent(), loadReviews()]);
 window.SITE = S;
 const C = S.settings || {};
 
@@ -149,6 +156,120 @@ R.contact = () => `<section class="contact" id="contact"><div class="wrap">
       ${C.linkedin?`<a class="ccard rv" href="${safeUrl(C.linkedin)}" target="_blank" rel="noopener" data-ev="linkedin_click"><small>LinkedIn</small><p>${esc(C.linkedinLabel||'LinkedIn')}</p></a>`:''}
     </div>
   </div><div class="huge">LET'S WORK</div></section>`;
+
+
+/* ---------- reviews (from the reviews table, moderated in the dashboard) ---------- */
+const RV = {
+  kicker:{ar:'آراء العملاء',en:'Client reviews'}, title:{ar:'العملاء بيقولوا إيه',en:'What clients say'},
+  body:{ar:'',en:''}, add:{ar:'اكتب رأيك أو سجّله',en:'Leave a review'},
+  empty:{ar:'لو اشتغلنا مع بعض، رأيك يفرق معايا.',en:'Worked with me? Your review means a lot.'},
+  mTitle:{ar:'شاركني رأيك',en:'Share your review'}, mSub:{ar:'اكتب كلمتين أو سجّل رسالة صوتية. الرأي بيظهر بعد المراجعة.',en:'Write a few words or record a voice note. Reviews appear after approval.'},
+  name:{ar:'اسمك',en:'Your name'}, role:{ar:'البراند أو الشركة (اختياري)',en:'Brand or company (optional)'},
+  rating:{ar:'تقييمك',en:'Your rating'}, comment:{ar:'رأيك',en:'Your review'},
+  voice:{ar:'أو سجّل رسالة صوتية (لحد دقيقتين)',en:'Or record a voice note (up to 2 min)'},
+  rec:{ar:'ابدأ التسجيل',en:'Start recording'}, stop:{ar:'وقّف',en:'Stop'}, redo:{ar:'سجّل تاني',en:'Re-record'}, del:{ar:'امسح',en:'Delete'},
+  micErr:{ar:'مش قادر أوصل للمايك. اسمح للمتصفح يستخدمه أو اكتب رأيك.',en:'Microphone unavailable. Allow access or type your review.'},
+  send:{ar:'ابعت الرأي',en:'Send review'}, sending:{ar:'جاري الإرسال…',en:'Sending…'},
+  need:{ar:'اكتب اسمك، وبعدين اكتب رأيك أو سجّله.',en:'Add your name, then write or record your review.'},
+  ok:{ar:'شكراً! رأيك وصل وهيظهر بعد المراجعة.',en:'Thank you! Your review will appear after approval.'},
+  err:{ar:'حصلت مشكلة، جرّب تاني.',en:'Something went wrong, please try again.'}, close:{ar:'إغلاق',en:'Close'}
+};
+const rv = k => t(RV[k]);
+const revSec = () => (S.sections||[]).find(s=>s.type==='reviews');
+const stars = n => n ? `<div class="rstars" aria-label="${n}/5">${[1,2,3,4,5].map(i=>`<i class="${i<=n?'on':''}">★</i>`).join('')}</div>` : '';
+R.reviews = () => {
+  const s = revSec()||{}, d = s.data||{}, pick = k => t(d[k]) || rv(k);
+  const allow = d.allowSubmit !== false;
+  const cards = REVIEWS.map(x=>`<div class="tcard rcard rv ${x.featured?'feat':''}">
+      ${x.image_url?`<div class="tshot zoom" data-src="${img(x.image_url)}"><img src="${img(x.image_url)}" alt="" loading="lazy"></div>`:''}
+      ${stars(x.rating)}
+      ${x.comment?`<p class="tq" dir="auto">${esc(x.comment)}</p>`:''}
+      ${x.audio_url?`<audio class="raudio" controls preload="none" src="${img(x.audio_url)}"></audio>`:''}
+      <div class="tby"><b>${esc(x.name)}</b>${x.role?`<span>${esc(x.role)}</span>`:''}</div></div>`).join('');
+  return `<section id="reviews"><div class="wrap">
+    <div class="rhead"><div>${head(pick('kicker'), pick('title'))}</div>${allow?`<button class="btn btn-ghost mag rv" data-review data-ev="review_open"><span>${esc(pick('add'))}</span>${arrow}</button>`:''}</div>
+    ${t(d.body)?`<p class="lead rv">${esc(t(d.body))}</p>`:''}
+    ${cards?`<div class="tst rv-group">${cards}</div>`:(allow?`<p class="lead rv" style="margin-top:20px">${esc(rv('empty'))}</p>`:'')}
+  </div></section>`;
+};
+function reviewAllowed(){ const s=revSec(); return !s || (s.data||{}).allowSubmit!==false; }
+function openReview(){
+  if(!reviewAllowed()) return;
+  document.getElementById('rvModal')?.remove();
+  const m = document.createElement('div'); m.id='rvModal'; m.className='rvm open'; m.dir = L==='ar'?'rtl':'ltr';
+  m.innerHTML = `<form class="lform rvbox" novalidate>
+    <div class="full rvtop"><div><h3>${esc(rv('mTitle'))}</h3><p>${esc(rv('mSub'))}</p></div><button type="button" class="rvx" aria-label="${esc(rv('close'))}">✕</button></div>
+    <label><span>${esc(rv('name'))} *</span><input name="name" maxlength="120" autocomplete="name" required></label>
+    <label><span>${esc(rv('role'))}</span><input name="role" maxlength="160"></label>
+    <div class="fl"><span>${esc(rv('rating'))}</span><div class="rpick">${[5,4,3,2,1].map(i=>`<input type="radio" name="rating" value="${i}" id="rr${i}"><label for="rr${i}" title="${i}">★</label>`).join('')}</div></div>
+    <label class="full"><span>${esc(rv('comment'))}</span><textarea name="comment" rows="4" maxlength="3000"></textarea></label>
+    <div class="fl"><span>${esc(rv('voice'))}</span><div class="rrec">
+      <button type="button" class="rbtn" data-a="rec"><i class="rdot"></i><span>${esc(rv('rec'))}</span></button>
+      <span class="rtime" hidden>0:00</span>
+      <audio controls hidden></audio>
+      <button type="button" class="rlink" data-a="redo" hidden>${esc(rv('redo'))}</button>
+      <button type="button" class="rlink" data-a="del" hidden>${esc(rv('del'))}</button>
+    </div><em class="rerr"></em></div>
+    <input name="company_site" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+    <button class="btn btn-green full" type="submit"><span>${esc(rv('send'))}</span>${arrow}</button>
+    <p class="fmsg full" role="status"></p></form>`;
+  document.body.append(m); lenis&&lenis.stop(); track('review_form_open');
+  const f = m.querySelector('form'), msg = f.querySelector('.fmsg');
+  const close = ()=>{ stopRec(true); m.remove(); lenis&&lenis.start(); if(location.hash==='#review') history.replaceState(null,'',location.pathname+location.search); };
+  m.addEventListener('click',e=>{ if(e.target===m) close(); });
+  f.querySelector('.rvx').onclick = close;
+  m.addEventListener('keydown',e=>{ if(e.key==='Escape') close(); });
+  /* voice recorder */
+  const recBtn=f.querySelector('[data-a=rec]'), tm=f.querySelector('.rtime'), au=f.querySelector('audio'), redo=f.querySelector('[data-a=redo]'), del=f.querySelector('[data-a=del]'), rerr=f.querySelector('.rerr');
+  let mr=null, chunks=[], blob=null, timer=null, stream=null, secs=0;
+  const MAX=120, fmtT=s=>Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+  const pickType=()=>['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/ogg;codecs=opus'].find(x=>window.MediaRecorder&&MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(x))||'';
+  function ui(state){ // idle | rec | done
+    recBtn.hidden = state==='done'; recBtn.classList.toggle('on',state==='rec');
+    recBtn.querySelector('span').textContent = rv(state==='rec'?'stop':'rec');
+    tm.hidden = state!=='rec'; au.hidden = redo.hidden = del.hidden = state!=='done';
+  }
+  function stopRec(discard){ clearInterval(timer); if(mr && mr.state!=='inactive'){ if(discard) mr.onstop=null; mr.stop(); } if(stream){ stream.getTracks().forEach(x=>x.stop()); stream=null; } }
+  async function startRec(){
+    rerr.textContent='';
+    if(!navigator.mediaDevices || !window.MediaRecorder){ rerr.textContent=rv('micErr'); return; }
+    try{ stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}}); }catch(e){ rerr.textContent=rv('micErr'); return; }
+    const type=pickType(); chunks=[]; mr = new MediaRecorder(stream, type?{mimeType:type, audioBitsPerSecond:64000}:{});
+    mr.ondataavailable=e=>{ if(e.data && e.data.size) chunks.push(e.data); };
+    mr.onstop=()=>{ blob=new Blob(chunks,{type:(mr.mimeType||type||'audio/webm').split(';')[0]}); au.src=URL.createObjectURL(blob); ui('done'); };
+    mr.start(); secs=0; tm.textContent='0:00'; ui('rec'); track('review_record_start');
+    timer=setInterval(()=>{ secs++; tm.textContent=fmtT(secs); if(secs>=MAX) stopRec(); },1000);
+  }
+  recBtn.onclick=()=>{ if(mr && mr.state==='recording') stopRec(); else startRec(); };
+  redo.onclick=()=>{ blob=null; au.removeAttribute('src'); startRec(); };
+  del.onclick=()=>{ blob=null; au.removeAttribute('src'); ui('idle'); };
+  /* submit */
+  f.addEventListener('submit', async e=>{
+    e.preventDefault(); if(mr && mr.state==='recording') return;
+    const fd=new FormData(f), v=k=>String(fd.get(k)||'').trim();
+    if(v('company_site')) return;
+    const rec={name:v('name'), role:v('role')||null, rating:+v('rating')||null, comment:v('comment')||null, lang:L};
+    if(!rec.name || (!rec.comment && !blob)){ msg.className='fmsg full err'; msg.textContent=rv('need'); return; }
+    const sb=f.querySelector('button[type=submit]'), sp=sb.querySelector('span'); sp.textContent=rv('sending'); sb.disabled=true; msg.textContent='';
+    const H={apikey:CFG.key, Authorization:'Bearer '+CFG.key};
+    try{
+      if(blob){
+        const ext = /mp4|aac|m4a/.test(blob.type)?'m4a':/ogg/.test(blob.type)?'ogg':'webm';
+        const path=`v/${new Date().toISOString().slice(0,7)}/${Date.now().toString(36)}${Math.random().toString(36).slice(2,8)}.${ext}`;
+        const up=await fetch(`${CFG.url}/storage/v1/object/review-audio/${path}`,{method:'POST',headers:Object.assign({'Content-Type':blob.type||'audio/webm','x-upsert':'false'},H),body:blob});
+        if(!up.ok) throw new Error('upload '+up.status);
+        rec.audio_url=`${CFG.url}/storage/v1/object/public/review-audio/${path}`;
+      }
+      const r=await fetch(`${CFG.url}/rest/v1/reviews`,{method:'POST',headers:Object.assign({'Content-Type':'application/json',Prefer:'return=minimal'},H),body:JSON.stringify(rec)});
+      if(!r.ok) throw new Error(r.status);
+      track('review_submit',{review_has_voice:!!blob, review_rating:rec.rating||0});
+      f.querySelectorAll('label,.fl,button[type=submit]').forEach(x=>x.style.display='none');
+      msg.className='fmsg full ok'; msg.textContent=rv('ok'); setTimeout(close,3500);
+    }catch(err){ msg.className='fmsg full err'; msg.textContent=rv('err'); sp.textContent=rv('send'); sb.disabled=false; }
+  });
+  setTimeout(()=>f.querySelector('input[name=name]').focus(),50);
+}
+document.addEventListener('click',e=>{ if(e.target.closest('[data-review]')){ e.preventDefault(); openReview(); } });
 
 /* ---------- template sections (added from the dashboard) ---------- */
 const T = {};
@@ -418,6 +539,8 @@ addEventListener('resize',movePill);
 
 /* ---------- boot ---------- */
 render(); bind();
+const hashReview=()=>{ if(location.hash==='#review') setTimeout(openReview, hasG?2300:300); };
+hashReview(); addEventListener('hashchange',hashReview);
 const loader=document.getElementById('loader');
 if(hasG){
   lenis&&lenis.stop();

@@ -110,6 +110,7 @@ html[dir=ltr] .sw input:checked+span:before{transform:translateX(18px)}
 .ltable th,.ltable td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:start;vertical-align:top}
 .ltable th{color:var(--muted);font-size:12px;font-weight:800}
 .ltable select{padding:6px 8px;width:auto}
+.st-pending{color:#ffcc66}.st-approved{color:var(--green2)}.st-hidden{color:var(--muted)}.card.pend{border-color:rgba(255,204,102,.45)!important}
 .st-new{color:#ffcc66}.st-won{color:var(--green2)}.st-lost{color:var(--red)}
 .lcards{display:none}
 @media(max-width:860px){.ltable{display:none}.lcards{display:block}}
@@ -333,8 +334,8 @@ const kpiTitle = x=>`${x.pre||''}${x.n}${x.suf||''} — ${x.ar||x.en||''}`;
 const biList = (arr,label,addLabel)=>h('div',{},h('div',{class:'flab',style:'margin-bottom:8px'},label),repeater(arr,{title:x=>x.ar||x.en,form:x=>[fBiFlat(x,'النص')],make:()=>({en:'',ar:''}),addLabel,sub:true}));
 
 /* ======================= sections ======================= */
-const BUILTIN = {hero:'الواجهة (الاسم والصورة)',platforms:'شريط المنصات',level:'مستواك والأرقام',about:'من أنا',cases:'دراسات الحالة',results:'داشبوردات تانية',clients:'العملاء واللوجوهات',skills:'الخبرات والأدوات',niches:'المجالات',experience:'المسيرة المهنية',leadership:'القيادة والتعليم',form:'فورم طلب الخدمة',contact:'التواصل'};
-const BUILTIN_TAB = {hero:'home',level:'home',about:'texts',cases:'cases',results:'clients',clients:'clients',skills:'skills',niches:'skills',experience:'skills',leadership:'skills',platforms:'settings',form:'leads',contact:'settings'};
+const BUILTIN = {hero:'الواجهة (الاسم والصورة)',platforms:'شريط المنصات',level:'مستواك والأرقام',about:'من أنا',cases:'دراسات الحالة',results:'داشبوردات تانية',clients:'العملاء واللوجوهات',skills:'الخبرات والأدوات',niches:'المجالات',experience:'المسيرة المهنية',leadership:'القيادة والتعليم',form:'فورم طلب الخدمة',reviews:'آراء العملاء (الريفيوهات)',contact:'التواصل'};
+const BUILTIN_TAB = {hero:'home',level:'home',about:'texts',cases:'cases',results:'clients',clients:'clients',skills:'skills',niches:'skills',experience:'skills',leadership:'skills',platforms:'settings',form:'leads',reviews:'reviews',contact:'settings'};
 const TPL = {
   text_image:{name:'نص وصورة',desc:'عنوان وكلام وصورة جنبه، ومعاه زرار اختياري. مناسب لـ "من أنا" أو عرض خدمة.',mini:'<i style="flex:1"></i><i style="flex:1;background:rgba(255,255,255,.15)"></i>',
     make:()=>({kicker:{en:'',ar:''},title:{en:'',ar:''},body:{en:'',ar:''},image:'',side:'end',btnLabel:{en:'',ar:''},btnUrl:''}),
@@ -514,6 +515,103 @@ async function updateBadge(){
   const b=$('#side [data-t=leads] .badge'); if(b){ b.textContent=n; b.style.display=n?'':'none'; }
 }
 
+
+/* ======================= reviews ======================= */
+const REV_DEFAULT = ()=>({kicker:{ar:'آراء العملاء',en:'Client reviews'},title:{ar:'العملاء بيقولوا إيه',en:'What clients say'},body:{ar:'',en:''},add:{ar:'اكتب رأيك أو سجّله',en:'Leave a review'},allowSubmit:true});
+const RST={pending:'⏳ مستني موافقتك',approved:'✅ ظاهر في الموقع',hidden:'🚫 مخفي'};
+let revCache=null;
+async function updateRevBadge(){
+  let n; if(revCache) n=revCache.filter(r=>r.status==='pending').length;
+  else { const {count}=await sb.from('reviews').select('id',{count:'exact',head:true}).eq('status','pending'); n=count||0; }
+  const b=$('#side [data-t=reviews] .badge'); if(b){ b.textContent=n; b.style.display=n?'':'none'; }
+}
+async function viewReviews(){
+  const m=$('#main'); m.innerHTML='';
+  const sec=D.sections.find(s=>s.type==='reviews'); sec.data=Object.assign(REV_DEFAULT(),sec.data||{});
+  const link=location.origin+'/#review';
+  m.append(h('h1',{},'آراء العملاء'),h('div',{class:'sub'},'العميل يكتب رأيه أو يسجّله صوت من الموقع، والرأي بيوصلك هنا مستني موافقتك. مفيش حاجة بتظهر في الموقع غير اللي إنت توافق عليه. وتقدر تضيف سكرين شوت ريفيو بنفسك.'));
+  // section settings (saved with "حفظ ونشر")
+  const sc=h('div',{class:'card open'},h('div',{class:'chead'},h('div',{class:'ttl'},'إعدادات السيكشن'),h('span',{class:'tag'},'بيتحفظ بزرار حفظ ونشر')),
+    h('div',{class:'cbody'},
+      h('div',{class:'row',style:'gap:22px;margin-bottom:12px'},fCheck(sec,'visible','السيكشن ظاهر في الموقع'),fCheck(sec.data,'allowSubmit','العملاء يقدروا يضيفوا رأيهم من الموقع')),
+      fBi(sec.data,'kicker','العنوان الصغير (الأخضر)'),fBi(sec.data,'title','العنوان الكبير'),fBi(sec.data,'body','كلام تحت العنوان (اختياري)',{area:true}),fBi(sec.data,'add','نص زرار "أضف رأيك"'),
+      h('div',{class:'f'},h('label',{},'لينك تبعته للعميل يفتح له فورم الرأي على طول'),
+        h('div',{class:'row'},h('input',{type:'text',dir:'ltr',readonly:true,value:link,style:'flex:1'}),h('button',{class:'btn sm',type:'button',onclick:()=>{navigator.clipboard.writeText(link).then(()=>toast('اتنسخ اللينك'));}},'انسخ')),
+        h('div',{class:'hint'},'اللينك شغال حتى لو السيكشن مخفي، طول ما "العملاء يقدروا يضيفوا رأيهم" متعلّمة.'))));
+  m.append(sc);
+  // toolbar
+  const filter=h('select',{style:'width:auto'},h('option',{value:''},'كل الآراء'),Object.entries(RST).map(([k,v])=>h('option',{value:k},v)));
+  m.append(h('div',{class:'row',style:'margin:22px 0 14px'},h('h2',{style:'flex:1;font-size:20px'},'الآراء'),filter,
+    h('button',{class:'btn sm pri',onclick:()=>addManual()},'+ ضيف ريفيو (سكرين شوت أو كلام)')));
+  const box=h('div',{},h('div',{class:'loading'},'جاري التحميل…')); m.append(box);
+  const {data,error}=await sb.from('reviews').select('*').order('featured',{ascending:false}).order('created_at',{ascending:false}).limit(500);
+  if(error){ box.innerHTML=''; box.append(h('p',{style:'color:var(--red)'},'مش قادر أجيب الآراء: '+error.message)); return; }
+  revCache=data; updateRevBadge();
+  const upd=async(r,patch,msg='اتحفظ ✓')=>{ const {error}=await sb.from('reviews').update(patch).eq('id',r.id); if(error){ toast('ما اتحفظش: '+error.message,true); return false; } Object.assign(r,patch); toast(msg); updateRevBadge(); return true; };
+  const audioPath=u=>{ const k='/object/public/review-audio/'; const i=(u||'').indexOf(k); return i<0?null:decodeURIComponent(u.slice(i+k.length)); };
+  const when=r=>new Date(r.created_at).toLocaleString('ar-EG',{dateStyle:'medium',timeStyle:'short'});
+  const draw=()=>{ box.innerHTML=''; const rows=data.filter(r=>!filter.value||r.status===filter.value);
+    if(!rows.length){ box.append(h('div',{class:'loading'},filter.value?'مفيش آراء بالحالة دي.':'مفيش آراء لسه. ابعت اللينك اللي فوق لعملائك، أو ضيف سكرين شوت بنفسك.')); return; }
+    rows.forEach(r=>{
+      const card=h('div',{class:'card open rvc'+(r.status==='hidden'?' off':'')+(r.status==='pending'?' pend':'')});
+      const st=h('select',{class:'st-'+r.status,style:'width:auto'},Object.entries(RST).map(([k,v])=>h('option',{value:k},v))); st.value=r.status;
+      st.onchange=async()=>{ if(await upd(r,{status:st.value},st.value==='approved'?'ظهر في الموقع ✓':'اتشال من الموقع')) draw(); else st.value=r.status; };
+      const quick = r.status==='approved'
+        ? h('button',{class:'btn sm',onclick:async()=>{ if(await upd(r,{status:'hidden'},'اتشال من الموقع')) draw(); }},'🚫 اخفي')
+        : h('button',{class:'btn sm pri',onclick:async()=>{ if(await upd(r,{status:'approved'},'ظهر في الموقع ✓')) draw(); }},'✅ اعرضه في الموقع');
+      const star=h('button',{class:'ib',title:r.featured?'شيل التثبيت':'ثبّته في الأول',style:r.featured?'color:#f5c84c':'',onclick:async()=>{ if(await upd(r,{featured:!r.featured},r.featured?'اتشال التثبيت':'اتثبت في الأول')) draw(); }},'★');
+      const del=h('button',{class:'ib del',title:'مسح نهائي',onclick:async()=>{ if(!confirm('تمسح الرأي ده نهائي؟'))return;
+        const {error}=await sb.from('reviews').delete().eq('id',r.id); if(error) return toast(error.message,true);
+        const ap=audioPath(r.audio_url); if(ap) await sb.storage.from('review-audio').remove([ap]);
+        data.splice(data.indexOf(r),1); toast('اتمسح'); updateRevBadge(); draw(); }},'🗑');
+      // editable fields (save on change)
+      const inp=(k,ph,attrs={})=>{ const el=h(attrs.area?'textarea':'input',Object.assign({type:'text',placeholder:ph,rows:attrs.area?3:null},attrs.dir?{dir:attrs.dir}:{})); el.value=r[k]||''; el.onchange=()=>{ const v=el.value.trim(); if(k==='name'&&!v){ el.value=r.name; return toast('الاسم مينفعش يبقى فاضي',true);} upd(r,{[k]:v||null}); }; return el; };
+      const rate=h('select',{style:'width:auto'},h('option',{value:''},'من غير نجوم'),[5,4,3,2,1].map(i=>h('option',{value:i},'★'.repeat(i)))); rate.value=r.rating||''; rate.onchange=()=>upd(r,{rating:+rate.value||null});
+      const imgBox=h('div',{class:'row',style:'align-items:flex-start'});
+      const drawImg=()=>{ imgBox.innerHTML='';
+        if(r.image_url) imgBox.append(h('a',{href:r.image_url,target:'_blank'},h('img',{src:r.image_url,style:'max-width:220px;max-height:220px;border-radius:12px;border:1px solid var(--line);display:block'})));
+        imgBox.append(h('div',{class:'row'},h('button',{class:'btn sm',onclick:async()=>{ const fs=await pickFiles(false); if(!fs.length)return; const u=await uploadMany(fs); if(u[0] && await upd(r,{image_url:u[0]},'اتحطت الصورة')) drawImg(); }},r.image_url?'غيّر السكرين شوت':'⬆ ضيف سكرين شوت'),
+          r.image_url?h('button',{class:'btn sm danger',onclick:async()=>{ if(!r.comment&&!r.audio_url) return toast('لازم الرأي يفضل فيه كلام أو صوت أو صورة',true); if(await upd(r,{image_url:null},'اتشالت الصورة')) drawImg(); }},'شيل الصورة'):null)); };
+      drawImg();
+      card.append(h('div',{class:'chead',style:'cursor:default'},star,h('div',{class:'ttl'},r.name),h('span',{class:'tag'+(r.source==='visitor'?' g':'')},r.source==='visitor'?'من الموقع':'أضفته إنت'),h('span',{class:'tag'},when(r)),
+          h('div',{class:'tools'},quick,st,del)),
+        h('div',{class:'cbody'},
+          h('div',{class:'grid2'},h('div',{class:'f'},h('label',{},'الاسم'),inp('name','اسم العميل')),h('div',{class:'f'},h('label',{},'البراند أو الصفة'),inp('role','اختياري'))),
+          h('div',{class:'f'},h('label',{},'التقييم'),rate),
+          h('div',{class:'f'},h('label',{},'كلام العميل'),inp('comment','من غير كلام',{area:true})),
+          r.audio_url?h('div',{class:'f'},h('label',{},'الرسالة الصوتية'),h('div',{class:'row'},h('audio',{controls:true,preload:'none',src:r.audio_url,style:'flex:1;min-width:220px'}),
+            h('button',{class:'btn sm danger',onclick:async()=>{ if(!r.comment&&!r.image_url) return toast('لازم الرأي يفضل فيه كلام أو صوت أو صورة',true); if(!confirm('تشيل التسجيل؟'))return; const ap=audioPath(r.audio_url); if(await upd(r,{audio_url:null},'اتشال التسجيل')){ if(ap) await sb.storage.from('review-audio').remove([ap]); draw(); } }},'شيل التسجيل'))):null,
+          h('div',{class:'f'},h('label',{},'سكرين شوت'),imgBox)));
+      box.append(card);
+    });
+  };
+  filter.onchange=draw; draw();
+  function addManual(){
+    const x={name:'',role:'',rating:'',comment:'',image_url:'',status:'approved'};
+    const pv=h('div',{class:'pv',style:'width:160px;height:160px'});
+    const nameI=h('input',{type:'text',placeholder:'مثال: أحمد — Faz Card'}), roleI=h('input',{type:'text',placeholder:'اختياري'}), comI=h('textarea',{rows:3,placeholder:'اختياري لو هتحط سكرين شوت'});
+    const rateS=h('select',{},h('option',{value:''},'من غير نجوم'),[5,4,3,2,1].map(i=>h('option',{value:i},'★'.repeat(i))));
+    const showC=h('input',{type:'checkbox',checked:true});
+    const up=h('button',{class:'btn sm',type:'button',onclick:async()=>{ const fs=await pickFiles(false); if(!fs.length)return; up.disabled=true; const u=await uploadMany(fs); up.disabled=false; if(u[0]){ x.image_url=u[0]; pv.style.backgroundImage=`url("${u[0]}")`; } }},'⬆ ارفع سكرين شوت');
+    const save=h('button',{class:'btn pri',onclick:async()=>{
+      const rec={source:'admin',name:nameI.value.trim(),role:roleI.value.trim()||null,rating:+rateS.value||null,comment:comI.value.trim()||null,image_url:x.image_url||null,status:showC.checked?'approved':'hidden'};
+      if(!rec.name) return toast('اكتب اسم العميل',true);
+      if(!rec.comment&&!rec.image_url) return toast('ضيف سكرين شوت أو كلام العميل',true);
+      save.disabled=true; const {data:row,error}=await sb.from('reviews').insert(rec).select().single(); save.disabled=false;
+      if(error) return toast('ما اتحفظش: '+error.message,true);
+      data.unshift(row); md.remove(); toast(rec.status==='approved'?'اتضاف وظهر في الموقع ✓':'اتضاف (مخفي)'); draw(); }},'حفظ الريفيو');
+    const md=h('div',{class:'modal',onclick:e=>{if(e.target===md)md.remove()}},h('div',{class:'box',style:'width:min(560px,100%)'},
+      h('div',{class:'row'},h('h1',{style:'flex:1;font-size:22px'},'ضيف ريفيو'),h('button',{class:'btn sm',onclick:()=>md.remove()},'إغلاق')),
+      h('div',{class:'f',style:'margin-top:14px'},h('label',{},'سكرين شوت الريفيو'),h('div',{class:'imgf'},pv,up)),
+      h('div',{class:'f'},h('label',{},'اسم العميل أو البراند *'),nameI),
+      h('div',{class:'f'},h('label',{},'صفته'),roleI),
+      h('div',{class:'f'},h('label',{},'التقييم'),rateS),
+      h('div',{class:'f'},h('label',{},'كلام العميل'),comI),
+      h('label',{class:'chk',style:'margin:6px 0 16px'},showC,'يظهر في الموقع على طول'),save));
+    document.body.append(md); nameI.focus();
+  }
+}
+
 /* ======================= settings ======================= */
 const SHEET_SCRIPT = `// Google Apps Script — paste in Extensions > Apps Script, then Deploy > New deployment > Web app (Anyone)
 const SHEET_ID = '1N_cJrXCVywKFQOKdAk-buGGR7NCxgXwJOtLDk_uxwu4';
@@ -571,18 +669,20 @@ async function viewSettings(){
 }
 
 /* ======================= shell ======================= */
-const TABS=[['sections','🧩 أقسام الموقع',viewSections],['cases','📈 دراسات الحالة',viewCases],['clients','🏷 العملاء واللوجوهات',viewClients],['home','✨ الواجهة والأرقام',viewHome],['skills','🛠 الخبرات والمسيرة',viewSkills],['texts','✍️ النصوص',viewTexts],['leads','📥 الطلبات',viewLeads],['settings','⚙️ الإعدادات والتتبّع',viewSettings]];
+const TABS=[['sections','🧩 أقسام الموقع',viewSections],['cases','📈 دراسات الحالة',viewCases],['clients','🏷 العملاء واللوجوهات',viewClients],['home','✨ الواجهة والأرقام',viewHome],['skills','🛠 الخبرات والمسيرة',viewSkills],['texts','✍️ النصوص',viewTexts],['leads','📥 الطلبات',viewLeads],['reviews','⭐ الريفيوهات',viewReviews],['settings','⚙️ الإعدادات والتتبّع',viewSettings]];
 function go(t){ tab=t; document.querySelectorAll('#side button').forEach(b=>b.classList.toggle('on',b.dataset.t===t)); (TABS.find(x=>x[0]===t)||TABS[0])[2](); scrollTo(0,0); }
 function shell(){
   const side=$('#side'); side.innerHTML='';
-  TABS.forEach(([k,l])=>side.append(h('button',{'data-t':k,onclick:()=>go(k)},l,k==='leads'?h('span',{class:'badge',style:'display:none'},'0'):null)));
-  go(tab); updateBadge();
+  TABS.forEach(([k,l])=>side.append(h('button',{'data-t':k,onclick:()=>go(k)},l,(k==='leads'||k==='reviews')?h('span',{class:'badge',style:'display:none'},'0'):null)));
+  go(tab); updateBadge(); updateRevBadge();
 }
 function normalize(d){
   d=d||{}; d.settings=d.settings||{}; d.ui=d.ui||{};
   for(const k of ['levels','highlights','heroChips','stats','cases','resultsWall','featuredClients','clients','niches','experience','leadership','education','sections']) d[k]=Array.isArray(d[k])?d[k]:[];
   d.skills=d.skills||{}; for(const k of ['core','services','ads','ecom','tools']) d.skills[k]=Array.isArray(d.skills[k])?d.skills[k]:[];
   d.sections.forEach(s=>{ if(TPL[s.type]) s.data=Object.assign(TPL[s.type].make(), s.data||{}); });
+  if(!d.sections.some(s=>s.type==='reviews')){ const ci=d.sections.findIndex(x=>x.type==='form'||x.type==='contact'); d.sections.splice(ci<0?d.sections.length:ci,0,{id:'reviews',type:'reviews',visible:false,data:{}}); }
+  const rs=d.sections.find(s=>s.type==='reviews'); rs.data=Object.assign(REV_DEFAULT(), rs.data||{});
   return d;
 }
 async function loadData(){
